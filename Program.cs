@@ -11,12 +11,20 @@ app.Map("/ws", async context =>
     if (context.WebSockets.IsWebSocketRequest)
     {
         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-        string? roomId = context.Request.Query["room"]; // (ex: /ws?room=nomeDaSala)
+        string? roomId = context.Request.Query["room"];
+        string? username = context.Request.Query["username"];
+        string? userId = context.Request.Query["userId"];
 
-        if (string.IsNullOrEmpty(roomId))
-            roomId = "default";
+        //if (string.IsNullOrEmpty(roomId))
+        //    roomId = "default";
 
-        await RoomManager.Instance.HandleClientAsync(roomId, webSocket);
+        //if (string.IsNullOrEmpty(username))
+        //    username = "default";
+
+        //if (string.IsNullOrEmpty(userId))
+        //    userId = Guid.Empty.ToString();
+        if (!string.IsNullOrEmpty(roomId) && !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(userId))
+            await RoomManager.Instance.HandleClientAsync(roomId, username, Guid.Parse(userId), webSocket);
     }
     else
     {
