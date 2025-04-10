@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35806.99
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WatchParty.WS", "WatchParty.WS.csproj", "{9ADF2770-DC29-4796-A193-315C0D704E13}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9ADF2770-DC29-4796-A193-315C0D704E13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9ADF2770-DC29-4796-A193-315C0D704E13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9ADF2770-DC29-4796-A193-315C0D704E13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9ADF2770-DC29-4796-A193-315C0D704E13}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {CD57A664-51A4-4E9B-BE63-C14A92631297}
+	EndGlobalSection
+EndGlobal
