@@ -1,7 +1,12 @@
+using Npgsql;
+using System.Data;
 using System.Net.WebSockets;
-using WatchParty.WS;
+using WatchParty.WS.Managers;
+using WatchParty.WS.Repositories.UserRepository;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddScoped<IDbConnection>(sp => new NpgsqlConnection(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 var app = builder.Build();
 
 app.UseWebSockets();
@@ -12,19 +17,20 @@ app.Map("/ws", async context =>
     {
         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
         string? roomId = context.Request.Query["room"];
-        string? username = context.Request.Query["username"];
         string? userId = context.Request.Query["userId"];
-
-        //if (string.IsNullOrEmpty(roomId))
-        //    roomId = "default";
-
-        //if (string.IsNullOrEmpty(username))
-        //    username = "default";
-
-        //if (string.IsNullOrEmpty(userId))
-        //    userId = Guid.Empty.ToString();
-        if (!string.IsNullOrEmpty(roomId) && !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(userId))
-            await RoomManager.Instance.HandleClientAsync(roomId, username, Guid.Parse(userId), webSocket);
+        if (!string.IsNullOrEmpty(roomId) && !string.IsNullOrEmpty(userId))
+        {
+            using var scope = app.Services.CreateScope();
+            var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+            var user = await userRepository.GetByIdAsync(Guid.Parse(userId));
+            if (user is null)
+            {
+                context.Response.StatusCode = 404;
+                return;
+            }
+            user.WebSocket = webSocket;
+            await RoomManager.Instance.HandleClientAsync(roomId, user);
+        }
     }
     else
     {
