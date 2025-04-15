@@ -20,15 +20,15 @@ namespace WatchParty.WS.Managers
             });
         }
 
-        private async Task BroadcastActionAsync(string roomId, string action, string data)
-        {
-            await BroadcastAsync(roomId, new Payload
-            {
-                Type = "ACTION",
-                Message = action,
-                Data = data
-            });
-        }
+        // private async Task BroadcastActionAsync(string roomId, string action, string data)
+        // {
+        //     await BroadcastAsync(roomId, new Payload
+        //     {
+        //         Type = "ACTION",
+        //         Message = action,
+        //         Data = data
+        //     });
+        // }
 
         private async Task BroadcastVideoQueueAsync(string roomId, WebSocket webSocket, List<string> videos)
         {
@@ -46,27 +46,40 @@ namespace WatchParty.WS.Managers
             await BroadcastSystemAsync(roomId, message);
         }
 
-        private async Task BroadcastRoomInfoAsync(string roomId)
-        {
-            var room = GetRoomById(roomId);
-            await BroadcastAsync(roomId, new Payload
-            {
-                Type = "ROOM_INFO",
-                Users = room?.Users,
-                Videos = room?.Videos,
-                IsVideoPlaying = room?.IsVideoPlaying
-                //CurrentVideoPlaybackTime = room is not null ? room.CurrentVideoPlaybackTime : 0
-            });
-        }
+        // private async Task BroadcastRoomInfoAsync(string roomId)
+        // {
+        //     var room = GetRoomById(roomId);
+        //     await BroadcastAsync(roomId, new Payload
+        //     {
+        //         Type = "ROOM_INFO",
+        //         Users = room?.Users,
+        //         Videos = room?.Videos,
+        //         IsVideoPlaying = room?.IsVideoPlaying
+        //         //CurrentVideoPlaybackTime = room is not null ? room.CurrentVideoPlaybackTime : 0
+        //     });
+        // }
 
-        private async Task BroadcastCommandAsync(string roomId, string from, string command, string response)
+        private async Task BroadcastCommandAsync(string roomId, string from, string command, string content, string message)
         {
             await BroadcastAsync(roomId, new Payload
             {
                 Type = "COMMAND",
-                Message = command,
+                Message = message,
+                Content = [content],
+                Response = command,
                 From = from,
-                Response = response
+            });
+        }
+
+        private async Task BroadcastCommandAsync(string roomId, string from, string command, string[] content, string message)
+        {
+            await BroadcastAsync(roomId, new Payload
+            {
+                Type = "COMMAND",
+                Message = message,
+                Content = content,
+                Response = command,
+                From = from,
             });
         }
 
@@ -74,8 +87,8 @@ namespace WatchParty.WS.Managers
         {
             await BroadcastAsync(roomId, new Payload
             {
-                Type = "BROADCAST",
-                Message = message,
+                Type = "MESSAGE",
+                Response = message,
                 From = from
             });
         }
@@ -85,7 +98,7 @@ namespace WatchParty.WS.Managers
             await BroadcastAsync(roomId, new Payload
             {
                 Type = "SYSTEM",
-                Message = message,
+                Response = message,
             });
         }
 

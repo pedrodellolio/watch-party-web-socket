@@ -19,7 +19,7 @@ namespace WatchParty.WS.Managers
         {
             await AddClientToRoomAsync(roomId, user);
             await ReceiveAsync(roomId, user);
-            RemoveClientFromRoom(roomId, user);
+            await RemoveClientFromRoomAsync(roomId, user);
         }
 
         private async Task ReceiveAsync(string roomId, User user)
@@ -55,8 +55,6 @@ namespace WatchParty.WS.Managers
                         Console.WriteLine(request.Message);
                     else if (request.Action == "command")
                         await HandleCommandAsync(roomId, user, request.Message);
-                    else if (request.Action == "feedback")
-                        HandlePlaybackTime(roomId, request.Message);
                     else
                         await BroadcastMessageAsync(roomId, user.Name, request.Message);
                 }
@@ -75,6 +73,8 @@ namespace WatchParty.WS.Managers
 
         private async Task AddClientToRoomAsync(string roomId, User user)
         {
+            List<User> users;
+
             lock (_lock)
             {
                 if (!_rooms.TryGetValue(roomId, out RoomContent? value) || value == null)
@@ -86,25 +86,21 @@ namespace WatchParty.WS.Managers
                 var userExists = value.Users.Any(u => u.Id == user.Id);
                 if (!userExists)
                     value.Users.Add(user);
+
+                users = [.. value.Users];
             }
 
+            await RunListUsersCommandAsync(roomId, user, "/users");
             await BroadcastSystemAsync(roomId, $"{user.Name} joined the room.");
-            await BroadcastRoomInfoAsync(roomId);
+            // var usernames = users.Select(u => u.Name).ToArray();
+            // await BroadcastCommandAsync(roomId, user.Name, "/info", usernames, $"{user.Name} joined the room.");
+            // await BroadcastRoomInfoAsync(roomId);
         }
 
-        private void RemoveClientFromRoom(string roomId, User user)
+
+        private async Task RemoveClientFromRoomAsync(string roomId, User user)
         {
-            lock (_lock)
-            {
-                if (_rooms.TryGetValue(roomId, out var content))
-                {
-                    content.Users.Remove(user);
-                    if (content.Users.Count == 0)
-                    {
-                        _rooms.Remove(roomId);
-                    }
-                }
-            }
+            await RunQuitCommandAsync(roomId, user, "/quit");
         }
 
         private RoomContent? GetRoomById(string roomId)
@@ -164,7 +160,7 @@ namespace WatchParty.WS.Managers
             {
                 if (_rooms.TryGetValue(roomId, out var room) && room != null)
                 {
-                    return room.Videos.ToList();
+                    return [.. room.Videos];
                 }
 
                 return [];
