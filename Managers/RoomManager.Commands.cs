@@ -1,4 +1,4 @@
-using System.Net.WebSockets;
+using Newtonsoft.Json;
 using WatchParty.WS.Entities;
 using WatchParty.WS.Extensions;
 
@@ -77,14 +77,14 @@ namespace WatchParty.WS.Managers
 
             // if room.CurrentVideoPlayingUrl is empty, it must send the videoUrl to start
             // if room.CurrentVideoPlayingUrl is NOT empty, it must just echo the command
-            var videoUrl = string.Empty;
-            if (string.IsNullOrEmpty(room.CurrentVideoPlayingUrl))
+            Video? video = null;
+            if (room.CurrentVideoPlaying is null)
             {
-                videoUrl = PeekNextVideoInRoom(roomId);
-                room.CurrentVideoPlayingUrl = videoUrl ?? string.Empty;
+                video = PeekNextVideoInRoom(roomId);
+                room.CurrentVideoPlaying = video;
             }
 
-            await BroadcastCommandAsync(roomId, user.Name, command, videoUrl ?? string.Empty);
+            await BroadcastCommandAsync(roomId, user.Name, command, video is not null ? JsonConvert.SerializeObject(video) : string.Empty);
             await BroadcastSystemAsync(roomId, $"{user.Name} started the video.");
         }
 
@@ -119,16 +119,20 @@ namespace WatchParty.WS.Managers
                 return;
             }
 
+            var videoData = await _youtubeService.GetVideoAsync(videoUrl);
+            if (videoData is null)
+            {
+                await BroadcastSystemAsync(roomId, $"Video not found.");
+                return;
+            }
+
             var isQueueEmpty = IsVideoQueueEmpty(roomId);
-            var position = EnqueueVideoToRoom(roomId, videoUrl);
-            await BroadcastCommandAsync(roomId, user.Name, prefix, videoUrl);
+            var position = EnqueueVideoToRoom(roomId, videoData);
+            await BroadcastCommandAsync(roomId, user.Name, prefix, JsonConvert.SerializeObject(videoData));
             await BroadcastSystemAsync(roomId, $"New video added to the queue. Current position: {position}");
 
-            if (string.IsNullOrEmpty(room.CurrentVideoPlayingUrl) && isQueueEmpty)
-            {
-                //room.CurrentVideoPlayingUrl = videoUrl;
+            if (room.CurrentVideoPlaying is null && isQueueEmpty)
                 await RunPlayCommandAsync(roomId, user, "/play");
-            }
         }
 
         private async Task RunSkipCommandAsync(string roomId, User user, string command)
@@ -137,20 +141,21 @@ namespace WatchParty.WS.Managers
             if (room is null)
                 throw new ApplicationException("Room not found");
 
-            room.CurrentVideoPlayingUrl = string.Empty;
+            room.CurrentVideoPlaying = null;
             string[] content = [];
             string message = "The video queue is empty.";
 
-            var nextVideo = DequeueVideoFromRoom(roomId);
+            DequeueVideoFromRoom(roomId);
+            var nextVideo = PeekNextVideoInRoom(roomId);
             if (nextVideo is not null)
             {
                 var isEmpty = IsVideoQueueEmpty(roomId);
-                room.CurrentVideoPlayingUrl = nextVideo;
+                room.CurrentVideoPlaying = nextVideo;
 
-                content = [.. content, nextVideo.ToString()];
+                content = [.. content, JsonConvert.SerializeObject(nextVideo)];
                 message = "Current video skipped.";
                 if (!isEmpty)
-                    message += $" Now playing: {nextVideo}.";
+                    message += $" Now playing: {nextVideo.Description}.";
                 else
                     message += $" Queue is now empty.";
             }
@@ -167,10 +172,10 @@ namespace WatchParty.WS.Managers
 
             string[] content = [];
             string message = "The video queue is empty.";
-            if (!string.IsNullOrEmpty(room.CurrentVideoPlayingUrl))
+            if (room.CurrentVideoPlaying is not null)
             {
-                content = [.. content, room.CurrentVideoPlayingUrl];
-                message = $"Now playing: {room.CurrentVideoPlayingUrl}";
+                content = [.. content, JsonConvert.SerializeObject(room.CurrentVideoPlaying)];
+                message = $"Now playing: {room.CurrentVideoPlaying.Description}";
             }
             await BroadcastCommandAsync(roomId, user.Name, command, content);
             await BroadcastSystemAsync(roomId, message);
@@ -179,14 +184,15 @@ namespace WatchParty.WS.Managers
         private async Task RunListCommandAsync(string roomId, User user, string command)
         {
             var videos = ListAllVideosInRoom(roomId);
-            await BroadcastCommandAsync(roomId, user.Name, command, [.. videos]);
+            await BroadcastCommandAsync(roomId, user.Name, command, [.. videos.Select(v => JsonConvert.SerializeObject(v))]);
             if (videos.Count == 0)
             {
                 await BroadcastSystemAsync(roomId, $"The video queue is empty.");
                 return;
             }
 
-            await BroadcastSystemAsync(roomId, $"Current queue: {string.Join(",", videos)}");
+            var queueList = videos.Select(v => v.Description);
+            await BroadcastSystemAsync(roomId, $"Current queue: {string.Join(",", queueList)}");
         }
     }
 }

@@ -1,10 +1,11 @@
-﻿namespace WatchParty.WS.Entities
+﻿using Google.Apis.YouTube.v3.Data;
+
+namespace WatchParty.WS.Entities
 {
     public class RoomContent
     {
         public List<User> Users { get; set; } = [];
-        public Queue<string> Videos { get; set; } = [];
-        public double CurrentVideoPlaybackTime { get; set; }
-        public string CurrentVideoPlayingUrl { get; set; } = string.Empty;
+        public Queue<Video> Videos { get; set; } = [];
+        public Video? CurrentVideoPlaying { get; set; }
     }
 }

@@ -1,19 +1,17 @@
 using Newtonsoft.Json;
-using System.Globalization;
 using System.Net.WebSockets;
 using System.Text;
 using WatchParty.WS.Entities;
 using WatchParty.WS.Models;
+using WatchParty.WS.Services;
 
 namespace WatchParty.WS.Managers
 {
-    public partial class RoomManager
+    public partial class RoomManager(IYoutubeService youTubeService)
     {
-        private static readonly Lazy<RoomManager> _instance = new(() => new RoomManager());
-
-        public static RoomManager Instance => _instance.Value;
         private readonly Dictionary<string, RoomContent> _rooms = [];
         private readonly Lock _lock = new();
+        private readonly IYoutubeService _youtubeService = youTubeService;
 
         public async Task HandleClientAsync(string roomId, User user)
         {
@@ -110,14 +108,15 @@ namespace WatchParty.WS.Managers
             }
         }
 
-        private int? EnqueueVideoToRoom(string roomId, string video)
+        private int? EnqueueVideoToRoom(string roomId, Video video)
         {
             lock (_lock)
             {
                 if (_rooms.TryGetValue(roomId, out var room) && room != null)
                 {
-                    if (!string.IsNullOrEmpty(video))
+                    if (video is not null)
                     {
+
                         room.Videos.Enqueue(video);
                         return room.Videos.Count;
                     }
@@ -126,7 +125,7 @@ namespace WatchParty.WS.Managers
             }
         }
 
-        private string? DequeueVideoFromRoom(string roomId)
+        private Video? DequeueVideoFromRoom(string roomId)
         {
             lock (_lock)
             {
@@ -139,7 +138,7 @@ namespace WatchParty.WS.Managers
             }
         }
 
-        private string? PeekNextVideoInRoom(string roomId)
+        private Video? PeekNextVideoInRoom(string roomId)
         {
             lock (_lock)
             {
@@ -165,7 +164,7 @@ namespace WatchParty.WS.Managers
             }
         }
 
-        private List<string> ListAllVideosInRoom(string roomId)
+        private List<Video> ListAllVideosInRoom(string roomId)
         {
             lock (_lock)
             {
