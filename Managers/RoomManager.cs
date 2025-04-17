@@ -61,16 +61,6 @@ namespace WatchParty.WS.Managers
             }
         }
 
-        private void HandlePlaybackTime(string roomId, string time)
-        {
-            lock (_lock)
-            {
-                Console.WriteLine(time);
-                if (_rooms.TryGetValue(roomId, out var room) && room != null)
-                    room.CurrentVideoPlaybackTime = Convert.ToDouble(time, CultureInfo.InvariantCulture);
-            }
-        }
-
         private async Task AddClientToRoomAsync(string roomId, User user)
         {
             List<User> users;
@@ -90,17 +80,25 @@ namespace WatchParty.WS.Managers
                 users = [.. value.Users];
             }
 
-            await RunListUsersCommandAsync(roomId, user, "/users");
+            await RunListUsersCommandAsync(roomId, user, "/users", silent: true);
             await BroadcastSystemAsync(roomId, $"{user.Name} joined the room.");
-            // var usernames = users.Select(u => u.Name).ToArray();
-            // await BroadcastCommandAsync(roomId, user.Name, "/info", usernames, $"{user.Name} joined the room.");
-            // await BroadcastRoomInfoAsync(roomId);
         }
 
 
         private async Task RemoveClientFromRoomAsync(string roomId, User user)
         {
-            await RunQuitCommandAsync(roomId, user, "/quit");
+            lock (_lock)
+            {
+                if (_rooms.TryGetValue(roomId, out var content))
+                {
+                    content.Users.Remove(user);
+                    if (content.Users.Count == 0)
+                    {
+                        _rooms.Remove(roomId);
+                    }
+                }
+            }
+            //await RunQuitCommandAsync(roomId, user, "/quit");
         }
 
         private RoomContent? GetRoomById(string roomId)
@@ -151,6 +149,19 @@ namespace WatchParty.WS.Managers
                 }
 
                 return null;
+            }
+        }
+
+        private bool IsVideoQueueEmpty(string roomId)
+        {
+            lock (_lock)
+            {
+                if (_rooms.TryGetValue(roomId, out var room) && room != null && room.Videos.Count > 0)
+                {
+                    return room.Videos.Count == 0;
+                }
+
+                return true;
             }
         }
 

@@ -14,6 +14,9 @@ namespace WatchParty.WS.Models
         [JsonProperty(PropertyName = "date")]
         public DateTime Date => DateTime.Now;
 
+        [JsonProperty(PropertyName = "silent")]
+        public bool Silent { get; set; }
+
         [JsonProperty(PropertyName = "response")]
         public string? Response { get; set; }
 

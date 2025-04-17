@@ -1,85 +1,36 @@
+using Microsoft.OpenApi.Extensions;
 using Newtonsoft.Json;
 using System.Net.WebSockets;
 using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using WatchParty.WS.Entities;
-using WatchParty.WS.Managers;
+using WatchParty.WS.Enums;
 using WatchParty.WS.Models;
 
 namespace WatchParty.WS.Managers
 {
     public partial class RoomManager
     {
-        private async Task BroadcastVideoAsync(string roomId, string videoUrl)
+        private async Task BroadcastCommandAsync(string roomId, string from, string command, string content, bool silent = false)
         {
             await BroadcastAsync(roomId, new Payload
             {
-                Type = "CURRENT_VIDEO",
-                Message = videoUrl
-            });
-        }
-
-        // private async Task BroadcastActionAsync(string roomId, string action, string data)
-        // {
-        //     await BroadcastAsync(roomId, new Payload
-        //     {
-        //         Type = "ACTION",
-        //         Message = action,
-        //         Data = data
-        //     });
-        // }
-
-        private async Task BroadcastVideoQueueAsync(string roomId, WebSocket webSocket, List<string> videos)
-        {
-            if (videos.Count == 0)
-            {
-                await SendDirectSystemAsync(webSocket, "The video queue is empty.");
-                return;
-            }
-
-            var formattedList = string.Join(Environment.NewLine,
-                videos.Select((v, i) => $"{i + 1}. {v}"));
-
-            var message = $"Current Video Queue:\n{formattedList}";
-
-            await BroadcastSystemAsync(roomId, message);
-        }
-
-        // private async Task BroadcastRoomInfoAsync(string roomId)
-        // {
-        //     var room = GetRoomById(roomId);
-        //     await BroadcastAsync(roomId, new Payload
-        //     {
-        //         Type = "ROOM_INFO",
-        //         Users = room?.Users,
-        //         Videos = room?.Videos,
-        //         IsVideoPlaying = room?.IsVideoPlaying
-        //         //CurrentVideoPlaybackTime = room is not null ? room.CurrentVideoPlaybackTime : 0
-        //     });
-        // }
-
-        private async Task BroadcastCommandAsync(string roomId, string from, string command, string content, string message)
-        {
-            await BroadcastAsync(roomId, new Payload
-            {
-                Type = "COMMAND",
-                Message = message,
+                Type = ServerResponseType.COMMAND.GetDisplayName(),
                 Content = [content],
                 Response = command,
                 From = from,
+                Silent = silent
             });
         }
 
-        private async Task BroadcastCommandAsync(string roomId, string from, string command, string[] content, string message)
+        private async Task BroadcastCommandAsync(string roomId, string from, string command, string[] content, bool silent = false)
         {
             await BroadcastAsync(roomId, new Payload
             {
-                Type = "COMMAND",
-                Message = message,
+                Type = ServerResponseType.COMMAND.GetDisplayName(),
                 Content = content,
                 Response = command,
                 From = from,
+                Silent = silent
             });
         }
 
@@ -87,8 +38,8 @@ namespace WatchParty.WS.Managers
         {
             await BroadcastAsync(roomId, new Payload
             {
-                Type = "MESSAGE",
-                Response = message,
+                Type = ServerResponseType.MESSAGE.GetDisplayName(),
+                Message = message,
                 From = from
             });
         }
@@ -97,8 +48,8 @@ namespace WatchParty.WS.Managers
         {
             await BroadcastAsync(roomId, new Payload
             {
-                Type = "SYSTEM",
-                Response = message,
+                Type = ServerResponseType.SYSTEM.GetDisplayName(),
+                Message = message,
             });
         }
 
@@ -136,7 +87,7 @@ namespace WatchParty.WS.Managers
         {
             await SendDirectMessageAsync(webSocket, new Payload
             {
-                Type = "COMMAND",
+                Type = ServerResponseType.COMMAND.GetDisplayName(),
                 Message = command,
             });
         }
@@ -145,7 +96,7 @@ namespace WatchParty.WS.Managers
         {
             await SendDirectMessageAsync(webSocket, new Payload
             {
-                Type = "SYSTEM",
+                Type = ServerResponseType.SYSTEM.GetDisplayName(),
                 Message = message,
             });
         }
